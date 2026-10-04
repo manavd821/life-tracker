@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -23,4 +23,14 @@ class User(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    behaviors: Mapped[list["Behavior"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    activity_labels: Mapped[list["ActivityLabel"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    context_tags: Mapped[list["BehaviorContextTag"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )

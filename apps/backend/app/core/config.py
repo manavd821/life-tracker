@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
     CLERK_WEBHOOK_SECRET: str
+    CLERK_ISSUER: str
+    CLERK_AUDIENCE: str | None = None
+    CLERK_ALLOWED_ORIGINS: list[str] = []
 
     @field_validator("DATABASE_URL")
     @classmethod

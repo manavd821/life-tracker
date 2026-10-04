@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.10",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.4.0",
+    "lucide-react": "^1.52.0",
     "next": "16.3.8",
+    "radix-ui": "^1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

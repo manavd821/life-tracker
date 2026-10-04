@@ -1,17 +1,12 @@
-import {
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
-export default function Home() {
+export default function Welcome() {
   return (
     <main className="flex flex-1 w-full max-w-3xl flex-col gap-10 px-6 py-24">
       <div className="flex flex-col gap-4">
         <h1 className="text-4xl font-semibold tracking-tight">Life Tracker</h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-400">
+        <p className="text-lg text-muted-foreground">
           Sign in to track your behaviours, tasks and analytics.
         </p>
       </div>
@@ -35,10 +30,10 @@ export default function Home() {
       >
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/"
             className="rounded-full bg-foreground px-5 py-3 text-background"
           >
-            Go to dashboard
+            Go to today
           </Link>
           <UserButton />
         </div>

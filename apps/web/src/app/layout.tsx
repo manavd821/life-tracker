@@ -18,12 +18,12 @@ export const metadata: Metadata = {
   description: "Track habits, tasks and analytics in one place.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">{children}</body>
       </html>
