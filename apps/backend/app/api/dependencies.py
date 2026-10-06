@@ -4,6 +4,7 @@ from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import clerk_user_id_from_token
+from app.core.config import Settings, get_settings
 from app.core.errors import AuthenticationError
 from app.db.session import get_db
 from app.models.user import User
@@ -17,14 +18,27 @@ from app.repositories.interfaces.behavior_repository import BehaviorRepositoryIn
 from app.repositories.interfaces.context_tag_repository import (
     ContextTagRepositoryInterface,
 )
+from app.repositories.interfaces.task_repository import TaskRepositoryInterface
 from app.repositories.interfaces.user_repository import UserRepositoryInterface
+from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
 from app.services.activity_label_service import ActivityLabelService
+from app.services.analytics_service import AnalyticsService
 from app.services.behavior_service import BehaviorService
+from app.services.pattern_detection_service import PatternDetectionService
 from app.services.context_tag_service import ContextTagService
+from app.services.task_analysis_service import TaskAnalysisService
+from app.services.task_service import TaskService
 from app.services.user_service import UserService
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+def get_app_settings() -> Settings:
+    return get_settings()
+
+
+SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 
 
 def get_user_repository(session: DbSession) -> UserRepositoryInterface:
@@ -95,6 +109,62 @@ def get_context_tag_service(tags: ContextTagRepositoryDep) -> ContextTagService:
 
 
 ContextTagServiceDep = Annotated[ContextTagService, Depends(get_context_tag_service)]
+
+
+def get_task_repository() -> TaskRepositoryInterface:
+    return TaskRepository()
+
+
+TaskRepositoryDep = Annotated[TaskRepositoryInterface, Depends(get_task_repository)]
+
+
+def get_task_service(
+    tasks: TaskRepositoryDep,
+    activity_labels: ActivityLabelRepositoryDep,
+    context_tags: ContextTagRepositoryDep,
+) -> TaskService:
+    return TaskService(tasks, activity_labels, context_tags)
+
+
+TaskServiceDep = Annotated[TaskService, Depends(get_task_service)]
+
+
+def get_task_analysis_service(
+    tasks: TaskRepositoryDep,
+    behaviors: BehaviorRepositoryDep,
+) -> TaskAnalysisService:
+    return TaskAnalysisService(tasks, behaviors)
+
+
+TaskAnalysisServiceDep = Annotated[
+    TaskAnalysisService, Depends(get_task_analysis_service)
+]
+
+
+def get_analytics_service(
+    behaviors: BehaviorRepositoryDep,
+    task_analysis: TaskAnalysisServiceDep,
+) -> AnalyticsService:
+    return AnalyticsService(behaviors, task_analysis)
+
+
+AnalyticsServiceDep = Annotated[AnalyticsService, Depends(get_analytics_service)]
+
+
+def get_pattern_detection_service(
+    behaviors: BehaviorRepositoryDep,
+    settings: SettingsDep,
+) -> PatternDetectionService:
+    return PatternDetectionService(
+        behaviors,
+        min_transition_count=settings.PATTERN_MIN_TRANSITION_COUNT,
+        min_context_sessions=settings.PATTERN_MIN_CONTEXT_SESSIONS,
+    )
+
+
+PatternDetectionServiceDep = Annotated[
+    PatternDetectionService, Depends(get_pattern_detection_service)
+]
 
 
 async def get_current_user(

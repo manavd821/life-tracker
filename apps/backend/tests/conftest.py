@@ -37,6 +37,11 @@ def _test_database_url() -> str:
 TEST_DATABASE_URL = _test_database_url()
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
+_TRUNCATE = (
+    "TRUNCATE task_context_tag_map, tasks, behavior_context_tag_map, behaviors, "
+    "activity_labels, behavior_context_tags, users RESTART IDENTITY CASCADE"
+)
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -54,12 +59,7 @@ async def engine():
 
     created = create_async_engine(TEST_DATABASE_URL)
     async with created.begin() as connection:
-        await connection.execute(
-            text(
-                "TRUNCATE behavior_context_tag_map, behaviors, activity_labels, "
-                "behavior_context_tags, users RESTART IDENTITY CASCADE"
-            )
-        )
+        await connection.execute(text(_TRUNCATE))
     await created.dispose()
     return create_async_engine(TEST_DATABASE_URL)
 
@@ -71,12 +71,7 @@ async def session(engine) -> AsyncIterator[AsyncSession]:
         yield db_session
         await db_session.rollback()
     async with engine.begin() as connection:
-        await connection.execute(
-            text(
-                "TRUNCATE behavior_context_tag_map, behaviors, activity_labels, "
-                "behavior_context_tags, users RESTART IDENTITY CASCADE"
-            )
-        )
+        await connection.execute(text(_TRUNCATE))
 
 
 @pytest_asyncio.fixture
@@ -109,6 +104,47 @@ async def behavior_service():
     return BehaviorService(
         BehaviorRepository(), ActivityLabelRepository(), ContextTagRepository()
     )
+
+
+@pytest_asyncio.fixture
+async def task_service():
+    from app.repositories.activity_label_repository import ActivityLabelRepository
+    from app.repositories.context_tag_repository import ContextTagRepository
+    from app.repositories.task_repository import TaskRepository
+    from app.services.task_service import TaskService
+
+    return TaskService(
+        TaskRepository(), ActivityLabelRepository(), ContextTagRepository()
+    )
+
+
+@pytest_asyncio.fixture
+async def task_analysis_service():
+    from app.repositories.behavior_repository import BehaviorRepository
+    from app.repositories.task_repository import TaskRepository
+    from app.services.task_analysis_service import TaskAnalysisService
+
+    return TaskAnalysisService(TaskRepository(), BehaviorRepository())
+
+
+@pytest_asyncio.fixture
+async def analytics_service():
+    from app.repositories.behavior_repository import BehaviorRepository
+    from app.repositories.task_repository import TaskRepository
+    from app.services.analytics_service import AnalyticsService
+    from app.services.task_analysis_service import TaskAnalysisService
+
+    return AnalyticsService(
+        BehaviorRepository(), TaskAnalysisService(TaskRepository(), BehaviorRepository())
+    )
+
+
+@pytest_asyncio.fixture
+def pattern_detection_service():
+    from app.repositories.behavior_repository import BehaviorRepository
+    from app.services.pattern_detection_service import PatternDetectionService
+
+    return PatternDetectionService(BehaviorRepository())
 
 
 @pytest_asyncio.fixture

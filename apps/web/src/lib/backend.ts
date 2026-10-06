@@ -57,6 +57,62 @@ export type ContextTag = {
   context_tag: string;
 };
 
+export type Task = {
+  task_id: string;
+  user_id: string;
+  title: string;
+  primary_category: string;
+  activity_label: ActivityLabel | null;
+  context_tags: ContextTag[];
+  start_time: string;
+  end_time: string;
+  planned_minutes: number;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TaskAnalysis = {
+  task_id: string;
+  planned_minutes: number;
+  effective_minutes: number;
+  completion_rate: number;
+};
+
+export type BehaviorContribution = {
+  behavior_id: string;
+  start_time: string;
+  end_time: string;
+  primary_category: string;
+  activity_label: string | null;
+  overlap_minutes: number;
+  match_score: number;
+  effective_minutes: number;
+  matched_context_tags: string[];
+};
+
+export type TaskAnalysisDetail = TaskAnalysis & {
+  contributions: BehaviorContribution[];
+};
+
+export type DailyAnalytics = {
+  date: string;
+  summary: {
+    day_minutes: number;
+    tracked_minutes: number;
+    unaccounted_minutes: number;
+    behavior_count: number;
+  };
+  categories: { category: string; duration_minutes: number }[];
+  activities: { category: string; activity_label: string | null; duration_minutes: number }[];
+  tasks: {
+    count: number;
+    planned_minutes: number;
+    effective_minutes: number;
+    completion_rate: number;
+  };
+};
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { getToken } = await auth();
   const token = await getToken();
@@ -134,3 +190,111 @@ export const createContextTag = (primaryCategory: string, contextTag: string) =>
 
 export const deleteContextTag = (id: string) =>
   request<void>(`/api/context-tags/${id}`, { method: "DELETE" });
+
+export const getTasks = () => request<Task[]>("/api/tasks");
+
+export const getTaskAnalysisAll = () => request<TaskAnalysis[]>("/api/tasks/analysis");
+
+export const getTaskAnalysis = (taskId: string) =>
+  request<TaskAnalysisDetail>(`/api/tasks/${taskId}/analysis`);
+
+export const createTask = (body: Record<string, unknown>) =>
+  request<Task>("/api/tasks", { method: "POST", body: JSON.stringify(body) });
+
+export const updateTask = (taskId: string, body: Record<string, unknown>) =>
+  request<Task>(`/api/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(body) });
+
+export const deleteTask = (taskId: string) =>
+  request<void>(`/api/tasks/${taskId}`, { method: "DELETE" });
+
+export const getDailyAnalytics = (date: string, tzOffsetMinutes: number) =>
+  request<DailyAnalytics>(
+    `/api/analytics/daily?date=${date}&tz_offset_minutes=${tzOffsetMinutes}`,
+  );
+
+export type PatternWindow = {
+  start_date: string;
+  end_date: string;
+  behavior_count: number;
+};
+
+export type CategoryTransition = {
+  type: "category_transition";
+  from_category: string;
+  to_category: string;
+  count: number;
+  probability: number;
+  transitions_from_source: number;
+};
+
+export type ActivityTransition = {
+  type: "activity_transition";
+  from_category: string;
+  from_activity: string;
+  to_category: string;
+  to_activity: string;
+  count: number;
+  probability: number;
+  transitions_from_source: number;
+};
+
+export type TransitionPatterns = {
+  window: PatternWindow;
+  minimum_transition_count: number;
+  category_transitions: CategoryTransition[];
+  activity_transitions: ActivityTransition[];
+};
+
+export type ContextStat = {
+  type: "context_stat";
+  category: string;
+  activity_label: string | null;
+  dimension: string;
+  context: string;
+  session_count: number;
+  total_duration_minutes: number;
+  average_duration_minutes: number;
+};
+
+export type ContextAssociation = {
+  type: "context_association";
+  category: string;
+  activity_label: string | null;
+  dimension: string;
+  context_a: string;
+  context_b: string;
+  average_duration_a: number;
+  average_duration_b: number;
+  sample_a: number;
+  sample_b: number;
+  difference_minutes: number;
+  ratio: number;
+};
+
+export type ContextPatterns = {
+  window: PatternWindow;
+  minimum_context_sessions: number;
+  context_stats: ContextStat[];
+  associations: ContextAssociation[];
+};
+
+const patternQuery = (startDate: string, endDate: string, tzOffsetMinutes: number) =>
+  `start_date=${startDate}&end_date=${endDate}&tz_offset_minutes=${tzOffsetMinutes}`;
+
+export const getTransitionPatterns = (
+  startDate: string,
+  endDate: string,
+  tzOffsetMinutes: number,
+) =>
+  request<TransitionPatterns>(
+    `/api/patterns/transitions?${patternQuery(startDate, endDate, tzOffsetMinutes)}`,
+  );
+
+export const getContextPatterns = (
+  startDate: string,
+  endDate: string,
+  tzOffsetMinutes: number,
+) =>
+  request<ContextPatterns>(
+    `/api/patterns/context?${patternQuery(startDate, endDate, tzOffsetMinutes)}`,
+  );

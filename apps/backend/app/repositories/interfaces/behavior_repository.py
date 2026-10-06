@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.behavior import Behavior
+
+CONTEXT_DIMENSIONS = ("environment", "energy_level", "focus_state", "emotion_state")
+
+
+@dataclass(frozen=True)
+class ContextDurationRow:
+    """One behavior context bucket, e.g. Study / CN / Library."""
+
+    dimension: str
+    category: str
+    activity_label: str | None
+    context: str
+    session_count: int
+    total_duration_minutes: int
 
 
 class BehaviorRepositoryInterface(Protocol):
@@ -48,6 +63,34 @@ class BehaviorRepositoryInterface(Protocol):
         day_start: datetime,
         day_end: datetime,
     ) -> list[Behavior]: ...
+
+    async def list_for_range(
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        window_start: datetime,
+        window_end: datetime,
+    ) -> list[Behavior]: ...
+
+    async def get_context_duration_totals(
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        window_start: datetime,
+        window_end: datetime,
+    ) -> list[ContextDurationRow]: ...
+
+    async def get_day_totals(
+        self, session: AsyncSession, user_id: uuid.UUID, day_start: datetime, day_end: datetime
+    ) -> tuple[int, int]: ...
+
+    async def get_category_totals(
+        self, session: AsyncSession, user_id: uuid.UUID, day_start: datetime, day_end: datetime
+    ) -> list[tuple[str, int]]: ...
+
+    async def get_activity_totals(
+        self, session: AsyncSession, user_id: uuid.UUID, day_start: datetime, day_end: datetime
+    ) -> list[tuple[str, str | None, int]]: ...
 
     async def update(
         self, session: AsyncSession, behavior_id: uuid.UUID, **changes: object

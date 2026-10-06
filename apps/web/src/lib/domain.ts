@@ -61,3 +61,62 @@ export function splitIso(iso: string): { hours: number; minutes: number } {
   const parsed = new Date(iso);
   return { hours: parsed.getHours(), minutes: parsed.getMinutes() };
 }
+
+export function formatRate(rate: number): string {
+  const rounded = Math.round(rate * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
+}
+
+export function formatProbability(probability: number): string {
+  const percent = Math.round(probability * 1000) / 10;
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
+}
+
+export function formatMinutes(value: number): string {
+  return Number.isInteger(value) ? `${value}` : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+export function dayKey(iso: string): string {
+  return localDateString(new Date(iso));
+}
+
+export function parseLocalDate(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if ([year, month, day].some(Number.isNaN)) return null;
+  return new Date(year, month - 1, day);
+}
+
+export function shiftDateString(value: string, days: number): string {
+  const date = parseLocalDate(value) ?? new Date();
+  date.setDate(date.getDate() + days);
+  return localDateString(date);
+}
+
+export function weekdayLabel(value: string): string {
+  return new Date(value).toLocaleDateString([], {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+export function dayLabel(iso: string): string {
+  const key = dayKey(iso);
+  const today = localDateString(new Date());
+  if (key === today) return "Today";
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (key === localDateString(tomorrow)) return "Tomorrow";
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (key === localDateString(yesterday)) return "Yesterday";
+
+  return new Date(iso).toLocaleDateString([], {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timezone
 
 from psycopg.errors import ExclusionViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.day import day_window
 from app.core.errors import BehaviorOverlapError, InvalidTimeRange, ResourceNotFound
 from app.models.behavior import Behavior
 from app.models.enums import BehaviorSource, PrimaryCategory
@@ -86,9 +87,7 @@ class BehaviorService:
         day: date,
         tz_offset_minutes: int = 0,
     ) -> TimelineResponse:
-        tz = timezone(timedelta(minutes=tz_offset_minutes))
-        day_start = datetime.combine(day, time.min, tzinfo=tz)
-        day_end = day_start + timedelta(days=1)
+        day_start, day_end = day_window(day, tz_offset_minutes)
         behaviors = await self._behaviors.list_for_day(
             session, user_id, day_start, day_end
         )

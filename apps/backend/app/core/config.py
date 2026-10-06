@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     CLERK_AUDIENCE: str | None = None
     CLERK_ALLOWED_ORIGINS: list[str] = []
 
+    PATTERN_MIN_TRANSITION_COUNT: int = 5
+    PATTERN_MIN_CONTEXT_SESSIONS: int = 3
+
     @field_validator("DATABASE_URL")
     @classmethod
     def use_async_driver(cls, value: str) -> str:

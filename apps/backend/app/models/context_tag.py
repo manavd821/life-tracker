@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.behavior_context_tag_map import BehaviorContextTagMap
 from app.models.enums import PRIMARY_CATEGORY, PrimaryCategory
+from app.models.task_context_tag_map import TaskContextTagMap
 from app.models.user import User
 
 
@@ -29,6 +30,10 @@ class BehaviorContextTag(Base):
     user: Mapped[User] = relationship(back_populates="context_tags")
     behaviors: Mapped[list["Behavior"]] = relationship(  # noqa: F821
         secondary=BehaviorContextTagMap.__table__,
+        back_populates="context_tags",
+    )
+    tasks: Mapped[list["Task"]] = relationship(  # noqa: F821
+        secondary=TaskContextTagMap.__table__,
         back_populates="context_tags",
     )
 

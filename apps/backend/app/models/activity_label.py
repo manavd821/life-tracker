@@ -27,6 +27,7 @@ class ActivityLabel(Base):
 
     user: Mapped[User] = relationship(back_populates="activity_labels")
     behaviors: Mapped[list["Behavior"]] = relationship(back_populates="activity_label")  # noqa: F821
+    tasks: Mapped[list["Task"]] = relationship(back_populates="activity_label")  # noqa: F821
 
     __table_args__ = (
         UniqueConstraint(
