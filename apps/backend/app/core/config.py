@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     PATTERN_MIN_TRANSITION_COUNT: int = 5
     PATTERN_MIN_CONTEXT_SESSIONS: int = 3
 
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str | None = None
+
     @field_validator("DATABASE_URL")
     @classmethod
     def use_async_driver(cls, value: str) -> str:

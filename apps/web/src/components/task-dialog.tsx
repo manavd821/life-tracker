@@ -43,13 +43,14 @@ function dateValue(iso: string) {
 type Props = {
   labels: ActivityLabel[];
   tags: ContextTag[];
+  date?: string;
   task?: Task;
   trigger: React.ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function TaskDialog({ labels, tags, task, trigger, open, onOpenChange }: Props) {
+export function TaskDialog({ labels, tags, date, task, trigger, open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -60,7 +61,13 @@ export function TaskDialog({ labels, tags, task, trigger, open, onOpenChange }: 
             Planned time. Completion is calculated by the server from recorded behaviors.
           </DialogDescription>
         </DialogHeader>
-        <TaskForm task={task} labels={labels} tags={tags} onSaved={() => onOpenChange(false)} />
+        <TaskForm
+          task={task}
+          date={date}
+          labels={labels}
+          tags={tags}
+          onSaved={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -68,21 +75,24 @@ export function TaskDialog({ labels, tags, task, trigger, open, onOpenChange }: 
 
 function TaskForm({
   task,
+  date,
   labels,
   tags,
   onSaved,
 }: {
   task?: Task;
+  date?: string;
   labels: ActivityLabel[];
   tags: ContextTag[];
   onSaved: () => void;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveTask, idleState);
 
+  const defaultDate = date ?? localDateString(new Date());
   const [category, setCategory] = useState(task?.primary_category ?? CATEGORIES[1]);
-  const [startDate, setStartDate] = useState(() => (task ? dateValue(task.start_time) : localDateString(new Date())));
+  const [startDate, setStartDate] = useState(() => (task ? dateValue(task.start_time) : defaultDate));
   const [endDate, setEndDate] = useState(() =>
-    task ? dateValue(task.end_time) : localDateString(new Date()),
+    task ? dateValue(task.end_time) : defaultDate,
   );
   const [startTime, setStartTime] = useState(() => {
     const parts = task ? splitIso(task.start_time) : { hours: 9, minutes: 0 };

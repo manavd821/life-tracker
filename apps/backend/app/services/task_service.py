@@ -41,7 +41,7 @@ class TaskService:
             tasks = await self._tasks.list_for_user(session, user_id)
         else:
             day_start, day_end = day_window(day, tz_offset_minutes)
-            tasks = await self._tasks.get_tasks_for_date(
+            tasks = await self._tasks.list_overlapping_window(
                 session, user_id, day_start, day_end
             )
         return [TaskResponse.model_validate(task) for task in tasks]

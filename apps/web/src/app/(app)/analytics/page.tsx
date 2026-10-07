@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DateNavigator } from "@/components/date-navigator";
 import { getDailyAnalytics } from "@/lib/backend";
 import {
   formatDuration,
@@ -9,10 +8,9 @@ import {
   formatRate,
   localDateString,
   parseLocalDate,
-  shiftDateString,
+  timezoneOffsetMinutes,
   weekdayLabel,
 } from "@/lib/domain";
-import { timezoneOffsetMinutes } from "@/lib/domain";
 
 export default async function AnalyticsPage({
   searchParams,
@@ -26,16 +24,15 @@ export default async function AnalyticsPage({
   const offset = timezoneOffsetMinutes(selected);
 
   const analytics = await getDailyAnalytics(date, offset);
-  const isToday = date === localDateString(new Date());
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Today</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Analytics</h1>
           <p className="text-sm text-muted-foreground">{weekdayLabel(date)}</p>
         </div>
-        <DateNav date={date} isToday={isToday} />
+        <DateNavigator date={date} href={(day) => `/analytics?date=${day}`} todayHref="/analytics" />
       </header>
 
       <section className="flex flex-col gap-3 rounded-lg border border-border px-4 py-3">
@@ -58,7 +55,7 @@ export default async function AnalyticsPage({
         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           No behaviors recorded for this day.
           <br />
-          <Link href="/" className="underline underline-offset-4">
+          <Link href={`/?date=${date}`} className="underline underline-offset-4">
             Add your first behavior
           </Link>{" "}
           to start tracking your time.
@@ -68,29 +65,6 @@ export default async function AnalyticsPage({
       <CategorySection analytics={analytics} />
       <ActivitySection analytics={analytics} />
       <TaskSection analytics={analytics} />
-    </div>
-  );
-}
-
-function DateNav({ date, isToday }: { date: string; isToday: boolean }) {
-  return (
-    <div className="flex items-center gap-1">
-      <Button asChild variant="outline" size="icon-sm" aria-label="Previous day">
-        <Link href={`/analytics?date=${shiftDateString(date, -1)}`}>
-          <ChevronLeft className="size-4" />
-        </Link>
-      </Button>
-      <span className="w-28 text-center text-sm tabular-nums">{date}</span>
-      <Button asChild variant="outline" size="icon-sm" aria-label="Next day">
-        <Link href={`/analytics?date=${shiftDateString(date, 1)}`}>
-          <ChevronRight className="size-4" />
-        </Link>
-      </Button>
-      {!isToday ? (
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/analytics">Today</Link>
-        </Button>
-      ) : null}
     </div>
   );
 }

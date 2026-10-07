@@ -23,6 +23,10 @@ from app.repositories.interfaces.user_repository import UserRepositoryInterface
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
 from app.services.activity_label_service import ActivityLabelService
+from app.services.ai_chat_service import ChatService
+from app.services.ai_context_builder import AIContextBuilder
+from app.services.ai_insight_service import AIInsightService
+from app.services.ai_provider import AIProvider, GeminiProvider
 from app.services.analytics_service import AnalyticsService
 from app.services.behavior_service import BehaviorService
 from app.services.pattern_detection_service import PatternDetectionService
@@ -165,6 +169,54 @@ def get_pattern_detection_service(
 PatternDetectionServiceDep = Annotated[
     PatternDetectionService, Depends(get_pattern_detection_service)
 ]
+
+
+def get_ai_insight_service(
+    behaviors: BehaviorRepositoryDep,
+    analytics: AnalyticsServiceDep,
+    task_analysis: TaskAnalysisServiceDep,
+    pattern_detection: PatternDetectionServiceDep,
+) -> AIInsightService:
+    return AIInsightService(
+        behaviors,
+        analytics,
+        task_analysis,
+        pattern_detection,
+    )
+
+
+AIInsightServiceDep = Annotated[
+    AIInsightService, Depends(get_ai_insight_service)
+]
+
+
+def get_ai_provider(settings: SettingsDep) -> AIProvider:
+    return GeminiProvider(api_key=settings.GEMINI_API_KEY, model=settings.GEMINI_MODEL)
+
+
+AIProviderDep = Annotated[AIProvider, Depends(get_ai_provider)]
+
+
+def get_ai_context_builder(
+    analytics: AnalyticsServiceDep,
+    task_analysis: TaskAnalysisServiceDep,
+    tasks: TaskRepositoryDep,
+    pattern_detection: PatternDetectionServiceDep,
+) -> AIContextBuilder:
+    return AIContextBuilder(analytics, task_analysis, tasks, pattern_detection)
+
+
+AIContextBuilderDep = Annotated[AIContextBuilder, Depends(get_ai_context_builder)]
+
+
+def get_chat_service(
+    context_builder: AIContextBuilderDep,
+    provider: AIProviderDep,
+) -> ChatService:
+    return ChatService(context_builder, provider)
+
+
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
 
 
 async def get_current_user(

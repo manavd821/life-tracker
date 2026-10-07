@@ -9,6 +9,7 @@ from app.api.dependencies import (
     TaskAnalysisServiceDep,
     TaskServiceDep,
 )
+from app.core.day import day_window
 from app.schemas.task import (
     CreateTask,
     TaskAnalysis,
@@ -43,8 +44,13 @@ async def list_task_analysis(
     session: DbSession,
     user: CurrentUser,
     analysis: TaskAnalysisServiceDep,
+    date_: date | None = Query(default=None, alias="date"),
+    tz_offset_minutes: int = Query(default=0, ge=-840, le=840),
 ):
-    return await analysis.analyze_many_for_user(session, user.id)
+    if date_ is None:
+        return await analysis.analyze_many_for_user(session, user.id)
+    day_start, day_end = day_window(date_, tz_offset_minutes)
+    return await analysis.analyze_tasks_in_window(session, user.id, day_start, day_end)
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

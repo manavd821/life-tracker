@@ -44,3 +44,10 @@ class ResourceConflict(DomainError):
 class AuthenticationError(DomainError):
     status_code = 401
     code = "unauthenticated"
+
+
+class AIUnavailable(DomainError):
+    """The generative AI backend could not produce a usable response."""
+
+    status_code = 503
+    code = "ai_unavailable"

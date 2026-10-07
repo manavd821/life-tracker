@@ -1,34 +1,22 @@
 import { AddTaskButton, TaskRowActions } from "@/components/task-row-actions";
 import { TaskDetailButton } from "@/components/task-detail-dialog";
+import { DateNavigator } from "@/components/date-navigator";
 import {
   getActivityLabels,
   getContextTags,
-  getTaskAnalysisAll,
+  getTaskAnalysisForDay,
   getTasks,
   type TaskAnalysis,
 } from "@/lib/backend";
 import {
-  dayKey,
-  dayLabel,
   formatClock,
   formatDuration,
   formatMinutes,
   formatRate,
+  localDateString,
+  parseLocalDate,
+  timezoneOffsetMinutes,
 } from "@/lib/domain";
-
-function groupByDay<T extends { start_time: string }>(items: T[]) {
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const key = dayKey(item.start_time);
-    const bucket = groups.get(key);
-    if (bucket) {
-      bucket.push(item);
-    } else {
-      groups.set(key, [item]);
-    }
-  }
-  return [...groups.entries()];
-}
 
 function plannedTotal(analyses: TaskAnalysis[]): number {
   return analyses.reduce((total, analysis) => total + analysis.planned_minutes, 0);
@@ -38,10 +26,19 @@ function effectiveTotal(analyses: TaskAnalysis[]): number {
   return analyses.reduce((total, analysis) => total + analysis.effective_minutes, 0);
 }
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: requested } = await searchParams;
+  const selected = parseLocalDate(requested) ?? new Date();
+  const date = localDateString(selected);
+  const offset = timezoneOffsetMinutes(selected);
+
   const [tasks, analyses, labels, tags] = await Promise.all([
-    getTasks(),
-    getTaskAnalysisAll(),
+    getTasks(date, offset),
+    getTaskAnalysisForDay(date, offset),
     getActivityLabels(),
     getContextTags(),
   ]);
@@ -61,21 +58,23 @@ export default async function TasksPage() {
               : "Plan what you intend to do."}
           </p>
         </div>
-        <AddTaskButton labels={labels} tags={tags} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DateNavigator
+            date={date}
+            href={(day) => `/tasks?date=${day}`}
+            todayHref="/tasks"
+          />
+          <AddTaskButton labels={labels} tags={tags} date={date} />
+        </div>
       </header>
 
       {tasks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          No tasks yet. Add the first one.
+          No tasks scheduled for this day.
         </p>
-      ) : null}
-
-      {groupByDay(tasks).map(([key, dayTasks]) => (
-        <section key={key} className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
-            {dayLabel(dayTasks[0].start_time)}
-          </h2>
-          {dayTasks.map((task) => (
+      ) : (
+        <section className="flex flex-col gap-2">
+          {tasks.map((task) => (
             <TaskRow
               key={task.task_id}
               task={task}
@@ -85,7 +84,7 @@ export default async function TasksPage() {
             />
           ))}
         </section>
-      ))}
+      )}
     </div>
   );
 }

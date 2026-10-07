@@ -13,11 +13,12 @@ import {
   deleteContextTag,
   deleteTask,
   getTaskAnalysis,
+  sendChat,
   updateBehavior,
   updateTask,
 } from "@/lib/backend";
 import type { ActionState } from "@/lib/action-state";
-import type { TaskAnalysisDetail } from "@/lib/backend";
+import type { ChatMessage, TaskAnalysisDetail } from "@/lib/backend";
 
 function toState(error: unknown): ActionState {
   if (error instanceof BackendError) {
@@ -278,5 +279,34 @@ export async function loadTaskAnalysis(taskId: string): Promise<TaskAnalysisDeta
   } catch (error) {
     console.error(toState(error));
     return null;
+  }
+}
+
+const CHAT_FALLBACK_MESSAGE =
+  "I couldn't generate a response right now. Your recorded data is still available.";
+
+export type ChatResult =
+  | { ok: true; reply: string }
+  | { ok: false; message: string };
+
+export async function askLifeTrackerAI(
+  message: string,
+  date: string,
+  tzOffsetMinutes: number,
+  history: ChatMessage[],
+): Promise<ChatResult> {
+  try {
+    const response = await sendChat({
+      message,
+      date,
+      tz_offset_minutes: tzOffsetMinutes,
+      history,
+    });
+    return { ok: true, reply: response.reply };
+  } catch (error) {
+    if (error instanceof BackendError && error.message) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: false, message: CHAT_FALLBACK_MESSAGE };
   }
 }

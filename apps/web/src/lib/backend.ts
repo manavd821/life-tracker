@@ -191,9 +191,13 @@ export const createContextTag = (primaryCategory: string, contextTag: string) =>
 export const deleteContextTag = (id: string) =>
   request<void>(`/api/context-tags/${id}`, { method: "DELETE" });
 
-export const getTasks = () => request<Task[]>("/api/tasks");
+export const getTasks = (date: string, tzOffsetMinutes: number) =>
+  request<Task[]>(`/api/tasks?date=${date}&tz_offset_minutes=${tzOffsetMinutes}`);
 
-export const getTaskAnalysisAll = () => request<TaskAnalysis[]>("/api/tasks/analysis");
+export const getTaskAnalysisForDay = (date: string, tzOffsetMinutes: number) =>
+  request<TaskAnalysis[]>(
+    `/api/tasks/analysis?date=${date}&tz_offset_minutes=${tzOffsetMinutes}`,
+  );
 
 export const getTaskAnalysis = (taskId: string) =>
   request<TaskAnalysisDetail>(`/api/tasks/${taskId}/analysis`);
@@ -298,3 +302,26 @@ export const getContextPatterns = (
   request<ContextPatterns>(
     `/api/patterns/context?${patternQuery(startDate, endDate, tzOffsetMinutes)}`,
   );
+
+export type ChatRole = "user" | "assistant";
+
+export type ChatMessage = {
+  role: ChatRole;
+  content: string;
+};
+
+export type ChatResponse = {
+  reply: string;
+  date: string;
+};
+
+export const sendChat = (body: {
+  message: string;
+  date: string;
+  tz_offset_minutes: number;
+  history: ChatMessage[];
+}) =>
+  request<ChatResponse>("/api/insights/chat", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });

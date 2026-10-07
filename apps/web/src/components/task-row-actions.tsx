@@ -41,13 +41,22 @@ export function TaskRowActions({ task, labels, tags }: Props) {
   );
 }
 
-export function AddTaskButton({ labels, tags }: { labels: ActivityLabel[]; tags: ContextTag[] }) {
+export function AddTaskButton({
+  labels,
+  tags,
+  date,
+}: {
+  labels: ActivityLabel[];
+  tags: ContextTag[];
+  date: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <TaskDialog
       labels={labels}
       tags={tags}
+      date={date}
       open={open}
       onOpenChange={setOpen}
       trigger={<Button size="sm">Add task</Button>}

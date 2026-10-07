@@ -1,7 +1,15 @@
 import { AddBehaviorButton } from "@/components/add-behavior-button";
 import { BehaviorRowActions } from "@/components/behavior-row-actions";
+import { DateNavigator } from "@/components/date-navigator";
 import { getActivityLabels, getContextTags, getTimeline } from "@/lib/backend";
-import { formatClock, formatDuration, localDateString, timezoneOffsetMinutes } from "@/lib/domain";
+import {
+  formatClock,
+  formatDuration,
+  localDateString,
+  parseLocalDate,
+  timezoneOffsetMinutes,
+  weekdayLabel,
+} from "@/lib/domain";
 
 type Timeline = Awaited<ReturnType<typeof getTimeline>>;
 
@@ -42,12 +50,18 @@ function Stat({ label, value, muted = false }: { label: string; value: string; m
   );
 }
 
-export default async function TodayPage() {
-  const today = localDateString(new Date());
-  const offset = timezoneOffsetMinutes(new Date());
+export default async function BehaviorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: requested } = await searchParams;
+  const selected = parseLocalDate(requested) ?? new Date();
+  const date = localDateString(selected);
+  const offset = timezoneOffsetMinutes(selected);
 
   const [timeline, labels, tags] = await Promise.all([
-    getTimeline(today, offset),
+    getTimeline(date, offset),
     getActivityLabels(),
     getContextTags(),
   ]);
@@ -58,10 +72,13 @@ export default async function TodayPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Today</h1>
-          <p className="text-sm text-muted-foreground">{today}</p>
+          <h1 className="text-lg font-semibold tracking-tight">Behaviors</h1>
+          <p className="text-sm text-muted-foreground">{weekdayLabel(date)}</p>
         </div>
-        <AddBehaviorButton labels={labels} tags={tags} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DateNavigator date={date} href={(day) => `/?date=${day}`} todayHref="/" />
+          <AddBehaviorButton labels={labels} tags={tags} date={date} />
+        </div>
       </header>
 
       <section className="grid grid-cols-3 gap-4 rounded-lg border border-border px-4 py-3">
@@ -81,7 +98,7 @@ export default async function TodayPage() {
 
         {items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-            Nothing tracked yet. Add your first behavior.
+            No behaviors recorded for this day.
           </p>
         ) : null}
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DateNavigator } from "@/components/date-navigator";
 import { getContextPatterns, getTransitionPatterns } from "@/lib/backend";
 import {
   formatDuration,
@@ -8,6 +9,7 @@ import {
   parseLocalDate,
   shiftDateString,
   timezoneOffsetMinutes,
+  weekdayLabel,
 } from "@/lib/domain";
 
 export default async function PatternsPage({
@@ -16,8 +18,9 @@ export default async function PatternsPage({
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
   const { start, end } = await searchParams;
-  const startDate = start ?? shiftDateString(localDateString(new Date()), -6);
-  const endDate = end ?? localDateString(new Date());
+  const today = localDateString(new Date());
+  const endDate = end ?? today;
+  const startDate = start ?? endDate;
   const offset = timezoneOffsetMinutes(parseLocalDate(endDate) ?? new Date());
 
   const [transitions, context] = await Promise.all([
@@ -25,18 +28,33 @@ export default async function PatternsPage({
     getContextPatterns(startDate, endDate, offset),
   ]);
 
+  const span = Math.max(
+    0,
+    Math.round(
+      ((parseLocalDate(endDate)?.getTime() ?? 0) - (parseLocalDate(startDate)?.getTime() ?? 0)) /
+        86_400_000,
+    ),
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Patterns</h1>
           <p className="text-sm text-muted-foreground">
-            {startDate} to {endDate}
+            {startDate === endDate ? weekdayLabel(startDate) : `${startDate} to ${endDate}`}
             <span className="mx-2 text-border">|</span>
             {transitions.window.behavior_count} behaviors
           </p>
         </div>
-        <RangeNav startDate={startDate} endDate={endDate} />
+        <div className="flex flex-col items-end gap-2">
+          <DateNavigator
+            date={endDate}
+            href={(day) => rangeHref(shiftDateString(day, -span), day)}
+            todayHref={rangeHref(shiftDateString(today, -span), today)}
+          />
+          <RangeNav endDate={endDate} span={span} />
+        </div>
       </header>
 
       <TransitionSection transitions={transitions} />
@@ -49,25 +67,14 @@ function rangeHref(startDate: string, endDate: string) {
   return `/patterns?start=${startDate}&end=${endDate}`;
 }
 
-function RangeNav({ startDate, endDate }: { startDate: string; endDate: string }) {
-  const days = Math.round(
-    ((parseLocalDate(endDate)?.getTime() ?? 0) - (parseLocalDate(startDate)?.getTime() ?? 0)) /
-      86_400_000,
-  );
-
+function RangeNav({ endDate, span }: { endDate: string; span: number }) {
   return (
     <div className="flex flex-wrap items-center gap-1 text-sm">
       <Link
-        href={rangeHref(shiftDateString(endDate, -(days + 1)), endDate)}
+        href={rangeHref(shiftDateString(endDate, -(span + 1)), endDate)}
         className="rounded-md px-2 py-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
       >
         Widen
-      </Link>
-      <Link
-        href={rangeHref(endDate, endDate)}
-        className="rounded-md px-2 py-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-      >
-        Today
       </Link>
       <Link
         href={rangeHref(shiftDateString(endDate, -6), endDate)}
@@ -96,6 +103,8 @@ function TransitionSection({
     (row) => ({ label: row.to_category, probability: row.probability, count: row.count }),
   );
   const activity = transitions.activity_transitions;
+  const emptyMessage =
+    transitions.window.behavior_count === 0 ? "Not enough activity data for this day." : undefined;
 
   return (
     <section className="flex flex-col gap-4">
@@ -107,7 +116,11 @@ function TransitionSection({
         <div className="flex flex-col gap-2">
           <h3 className="text-xs text-muted-foreground">Category</h3>
           {groups.length === 0 ? (
-            <Empty threshold={transitions.minimum_transition_count} unit="transitions" />
+            <Empty
+              threshold={transitions.minimum_transition_count}
+              unit="transitions"
+              message={emptyMessage}
+            />
           ) : null}
           {groups.map(([from, rows]) => (
             <div key={from} className="flex flex-col gap-1 rounded-lg border border-border px-4 py-3">
@@ -131,7 +144,11 @@ function TransitionSection({
         <div className="flex flex-col gap-2">
           <h3 className="text-xs text-muted-foreground">Activity</h3>
           {activity.length === 0 ? (
-            <Empty threshold={transitions.minimum_transition_count} unit="transitions" />
+            <Empty
+              threshold={transitions.minimum_transition_count}
+              unit="transitions"
+              message={emptyMessage}
+            />
           ) : null}
           {activity.map((row) => (
             <div
@@ -213,7 +230,15 @@ function ContextSection({ context }: { context: Awaited<ReturnType<typeof getCon
       ) : null}
 
       {stats.length === 0 ? (
-        <Empty threshold={context.minimum_context_sessions} unit="sessions" />
+        <Empty
+          threshold={context.minimum_context_sessions}
+          unit="sessions"
+          message={
+            context.window.behavior_count === 0
+              ? "Not enough activity data for this day."
+              : undefined
+          }
+        />
       ) : null}
 
       {stats.map(([group, rows]) => (
@@ -277,10 +302,18 @@ function groupBy<Row, Group extends string, Value>(
   return [...groups.entries()];
 }
 
-function Empty({ threshold, unit }: { threshold: number; unit: string }) {
+function Empty({
+  threshold,
+  unit,
+  message,
+}: {
+  threshold: number;
+  unit: string;
+  message?: string;
+}) {
   return (
     <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-      No pattern yet. At least {threshold} {unit} are needed before one is shown.
+      {message ?? `No pattern yet. At least ${threshold} ${unit} are needed before one is shown.`}
     </p>
   );
 }

@@ -94,10 +94,18 @@ export function shiftDateString(value: string, days: number): string {
 }
 
 export function weekdayLabel(value: string): string {
-  return new Date(value).toLocaleDateString([], {
+  return (parseLocalDate(value) ?? new Date()).toLocaleDateString([], {
     weekday: "long",
     day: "numeric",
     month: "long",
+  });
+}
+
+export function fullDateLabel(value: string): string {
+  return (parseLocalDate(value) ?? new Date()).toLocaleDateString([], {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
 }
 

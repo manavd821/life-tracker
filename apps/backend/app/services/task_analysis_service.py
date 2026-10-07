@@ -68,6 +68,16 @@ class TaskAnalysisService:
         )
         return await self._analyze(session, user_id, tasks)
 
+    async def analyze_tasks_in_window(
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        start: datetime,
+        end: datetime,
+    ) -> list[TaskAnalysis]:
+        tasks = await self._tasks.list_overlapping_window(session, user_id, start, end)
+        return await self._analyze(session, user_id, tasks)
+
     async def _analyze(
         self, session: AsyncSession, user_id: uuid.UUID, tasks: list[Task]
     ) -> list[TaskAnalysis]:

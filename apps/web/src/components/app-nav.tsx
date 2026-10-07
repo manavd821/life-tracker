@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/", label: "Today" },
+  { href: "/", label: "Behaviors" },
   { href: "/tasks", label: "Tasks" },
   { href: "/analytics", label: "Analytics" },
   { href: "/patterns", label: "Patterns" },
+  { href: "/insights", label: "Insights" },
 ];
 
 const LIBRARY = [

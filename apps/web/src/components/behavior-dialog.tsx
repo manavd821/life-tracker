@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ActivityLabel, BehaviorResponse, ContextTag } from "@/lib/backend";
 import {
   CATEGORIES,
+  dayKey,
   EMOTION_STATES,
   ENERGY_LEVELS,
   ENVIRONMENTS,
@@ -48,13 +49,22 @@ function timeValue(hours: number, minutes: number) {
 type Props = {
   labels: ActivityLabel[];
   tags: ContextTag[];
+  date?: string;
   behavior?: BehaviorResponse;
   trigger: React.ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function BehaviorDialog({ labels, tags, behavior, trigger, open, onOpenChange }: Props) {
+export function BehaviorDialog({
+  labels,
+  tags,
+  date,
+  behavior,
+  trigger,
+  open,
+  onOpenChange,
+}: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -67,6 +77,7 @@ export function BehaviorDialog({ labels, tags, behavior, trigger, open, onOpenCh
         </DialogHeader>
         <BehaviorForm
           behavior={behavior}
+          date={date}
           labels={labels}
           tags={tags}
           onSaved={() => onOpenChange(false)}
@@ -78,11 +89,13 @@ export function BehaviorDialog({ labels, tags, behavior, trigger, open, onOpenCh
 
 function BehaviorForm({
   behavior,
+  date,
   labels,
   tags,
   onSaved,
 }: {
   behavior?: BehaviorResponse;
+  date?: string;
   labels: ActivityLabel[];
   tags: ContextTag[];
   onSaved: () => void;
@@ -134,7 +147,11 @@ function BehaviorForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {behavior ? <input type="hidden" name="behavior_id" value={behavior.behavior_id} /> : null}
-      <input type="hidden" name="start_date" value={localDateString(new Date())} />
+      <input
+        type="hidden"
+        name="start_date"
+        value={behavior ? dayKey(behavior.start_time) : (date ?? localDateString(new Date()))}
+      />
       <input type="hidden" name="start_time" value={startTime} />
       <input type="hidden" name="end_time" value={endTime} />
 
