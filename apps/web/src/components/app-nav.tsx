@@ -16,6 +16,8 @@ const LIBRARY = [
   { href: "/context-tags", label: "Context Tags" },
 ];
 
+const ACCOUNT = [{ href: "/profile", label: "Profile" }];
+
 export function AppNav() {
   const pathname = usePathname();
 
@@ -51,6 +53,23 @@ export function AppNav() {
         </p>
         <div className="flex flex-col gap-0.5">
           {LIBRARY.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={linkClass(pathname.startsWith(item.href))}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="px-3 pb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Account
+        </p>
+        <div className="flex flex-col gap-0.5">
+          {ACCOUNT.map((item) => (
             <Link
               key={item.href}
               href={item.href}
